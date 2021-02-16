@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using Prime31.MessageKit;
 
 namespace FarmGame
 {
     public class GameManager : MonoBehaviour
     {
-        public static GameManager INSTANCE;
 
         Camera mainCam;
-
+        const float cameraMovementSpeed = 0.2f;
         const float gameTickTime = 1f; //Time in second for a game tick
         float gameTime = 0;
 
@@ -23,41 +23,92 @@ namespace FarmGame
         Tilemap objectsTilemap;
 
         [SerializeField]
-        Crop defaultCrop;
+        Tilemap cropSpaceTilemap;
+
+        [SerializeField]
+        Crop plantA;
+        [SerializeField]
+        Crop plantB;
+
+        Crop currentCrop;
+
+        bool pause;
+        bool topView = true; //The game starts on top view
+
+        Vector3 lastMouseDownPosition = Vector3.zero;
+        bool mouseClick = false;
 
         private void Awake()
         {
-            INSTANCE = this;
             mainCam = Camera.main;
+
+            currentCrop = plantA;
         }
 
         // Start is called before the first frame update
         void Start()
         {
             StartCoroutine(GameTimeCoroutine());
+
+            MessageKit.addObserver(Messages.SwitchToTopView, () => topView = true);
+            MessageKit.addObserver(Messages.SwitchToField, () => topView = false);
+
+            MessageKit<FarmField>.addObserver(Messages.TryBuyField, OnTryBuyField);
         }
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0))
+            if (!topView)
             {
-                Vector3 mousePos = mainCam.ScreenToWorldPoint(Input.mousePosition);
-                Vector3Int mouseCoords = (Vector3Int)objectsTilemap.WorldToCell(mousePos);
-
-                if (!objectsTilemap.HasTile(mouseCoords))
+                //Mouse down
+                if (Input.GetMouseButtonDown(0))
                 {
-                    Plant(mouseCoords);
+                    lastMouseDownPosition = Input.mousePosition;
+                    mouseClick = true;
                 }
-                else
+
+                //Mouse click
+                if (Input.GetMouseButtonUp(0) && mouseClick)
                 {
-                    TileBase mouseTile = objectsTilemap.GetTile(mouseCoords);
-                    if (mouseTile is CropTile)
+                    Vector3 mouseScreenPosition = mainCam.ScreenToWorldPoint(Input.mousePosition);
+                    Vector3Int mouseCoords = objectsTilemap.WorldToCell(mouseScreenPosition);
+
+                    if (cropSpaceTilemap.HasTile(mouseCoords))
                     {
-                        Harvest((CropTile)mouseTile);
+                        //TODO : switch to another tilemap for crops
+                        if (!objectsTilemap.HasTile(mouseCoords))
+                        {
+                            Plant(mouseCoords);
+                        }
+                        else
+                        {
+                            TileBase mouseTile = objectsTilemap.GetTile(mouseCoords);
+                            if (mouseTile is CropTile)
+                            {
+                                Harvest((CropTile)mouseTile);
+                            }
+                        }
                     }
+
+                    lastMouseDownPosition = Vector3.zero;
+                }
+
+                //Mouse drag
+                if(Input.GetMouseButton(0) && lastMouseDownPosition != Input.mousePosition){
+                    mouseClick = false;
+
+                    
+                    Vector3 dragDirection = lastMouseDownPosition - Input.mousePosition;
+                    mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
+
+
+                    lastMouseDownPosition = Input.mousePosition;
+
                 }
             }
+
         }
+
 
         //Update the game time
         IEnumerator GameTimeCoroutine()
@@ -87,9 +138,43 @@ namespace FarmGame
             }
         }
 
+        void OnTryBuyField(FarmField field)
+        {
+            if (field.GetCost() > playerMoney)
+            {
+                Debug.Log("Not enough money to buy field");
+                return;
+            }
+            playerMoney -= field.GetCost();
+
+
+            Tilemap fieldMap = field.GetFieldTilemap();
+            BoundsInt fieldBounds = fieldMap.cellBounds;
+            Vector3Int vec = Vector3Int.zero;
+            for (int i = fieldBounds.xMin; i < fieldBounds.xMax; i++)
+            {
+                vec.x = i;
+                for (int j = fieldBounds.yMin; j < fieldBounds.yMax; j++)
+                {
+                    vec.y = j;
+                    if (fieldMap.HasTile(vec))
+                    {
+                        cropSpaceTilemap.SetTile(vec, fieldMap.GetTile(vec));
+                    }
+                }
+            }
+
+            field.SetBought(true);
+        }
+
         public void Plant(Vector3Int position)
         {
-            if (playerMoney < defaultCrop.purchasePrice)
+            if (currentCrop == null)
+            {
+                return;
+            }
+
+            if (playerMoney < currentCrop.purchasePrice)
             {
                 Debug.Log("Not enough money !");
                 return;
@@ -97,11 +182,11 @@ namespace FarmGame
 
             Debug.Log("Plant");
 
-            playerMoney -= defaultCrop.purchasePrice;
+            playerMoney -= currentCrop.purchasePrice;
 
             //TODO : optimize by object pooling ?
             CropTile newCrop = ScriptableObject.CreateInstance<CropTile>();
-            newCrop.Init(position, defaultCrop);
+            newCrop.Init(position, currentCrop);
             objectsTilemap.SetTile(position, newCrop);
 
             crops.Add(newCrop);
@@ -124,18 +209,57 @@ namespace FarmGame
         public void PauseGame()
         {
             Time.timeScale = 0f;
+            pause = true;
         }
 
         public void ResumeGame()
         {
             Time.timeScale = 1f;
+            pause = false;
         }
-
 
         //For quick debug purpose only
         void OnGUI()
         {
-            GUI.Label(new Rect(10, 10, 100, 20), "Money : "+playerMoney);
+            GUI.Label(new Rect(10, 10, 100, 20), "Money : " + playerMoney);
+
+            if (pause)
+            {
+                if (GUI.Button(new Rect(10, 50, 100, 20), "Resume"))
+                {
+                    ResumeGame();
+                }
+            }
+            else
+            {
+                if (GUI.Button(new Rect(10, 50, 100, 20), "Pause"))
+                {
+                    PauseGame();
+                }
+            }
+
+            if (GUI.Button(new Rect(10, 80, 100, 20), "PlantA"))
+            {
+                currentCrop = plantA;
+            }
+
+
+            if (GUI.Button(new Rect(10, 110, 100, 20), "PlantB"))
+            {
+                currentCrop = plantB;
+            }
+
+            if (GUI.Button(new Rect(10, 140, 100, 20), "TopView"))
+            {
+                if (topView)
+                {
+                    MessageKit.post(Messages.SwitchToField);
+                }
+                else
+                {
+                    MessageKit.post(Messages.SwitchToTopView);
+                }
+            }
         }
     }
 
