@@ -10,7 +10,7 @@ namespace FarmGame
     {
 
         Camera mainCam;
-        const float cameraMovementSpeed = 0.2f;
+        const float cameraMovementSpeed = 0.4f;
         const float gameTickTime = 1f; //Time in second for a game tick
         float gameTime = 0;
 
