@@ -32,5 +32,11 @@ namespace FarmGame
         public const int SwitchToTopView = 1;
         public const int TryBuyField = 2;
         public const int GameTick = 3;
+        public const int MoneyUpdate = 4;
+        public const int SwitchAction = 5;
+        public const int SwitchView = 6;
+        public const int CropSet = 7;
     }
+
+    public enum Action { Harvest, Prepare, Plant, Delete };
 }

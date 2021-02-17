@@ -101,6 +101,8 @@ namespace FarmGame
                 }
 
                 gameManager.SetCrops(cropTiles);
+            } else {
+                Debug.Log("Nothing to load");
             }
         }
         private void Update()

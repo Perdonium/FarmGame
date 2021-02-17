@@ -41,8 +41,6 @@ namespace FarmGame
         Vector3 lastMouseDownPosition = Vector3.zero;
         bool mouseClick = false;
 
-        enum Action { None, Prepare, Plant, Delete };
-
         Action currentAction;
 
         bool onMobile = false;
@@ -66,10 +64,16 @@ namespace FarmGame
         {
             StartCoroutine(GameTimeCoroutine());
 
+            MessageKit.addObserver(Messages.SwitchView, () => OnSwitchView());
             MessageKit.addObserver(Messages.SwitchToTopView, () => topView = true);
             MessageKit.addObserver(Messages.SwitchToField, () => topView = false);
 
             MessageKit<FarmField>.addObserver(Messages.TryBuyField, OnTryBuyField);
+
+            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
+
+            MessageKit<Action>.addObserver(Messages.SwitchAction, (a) => SwitchAction(a));
+            MessageKit<Crop>.addObserver(Messages.CropSet, (c) => SetCurrentCrop(c));
         }
 
         private void Update()
@@ -176,7 +180,7 @@ namespace FarmGame
                     Plant(mouseTile);
                 }
             }
-            else if (currentAction == Action.None && tileAlreadyPlaced)
+            else if (currentAction == Action.Harvest && tileAlreadyPlaced)
             {
                 if (mouseTile.CanHarvest())
                 {
@@ -213,6 +217,18 @@ namespace FarmGame
                     cropsTilemap.RefreshTile(crops[i].GetPosition());
                 }
             }
+        }
+
+        void OnSwitchView(){
+            Debug.Log("coucou");
+            if(topView){
+                MessageKit.post(Messages.SwitchToField);
+            } else {
+                MessageKit.post(Messages.SwitchToTopView);
+            }
+        }
+        void SwitchAction(Action a){
+            currentAction = a;
         }
 
         void OnTryBuyField(FarmField field)
@@ -260,13 +276,14 @@ namespace FarmGame
 
         public void Plant(CropTile tile)
         {
-            if (playerMoney < currentCrop.purchasePrice)
+            if (playerMoney < currentCrop.buyPrice)
             {
                 Debug.Log("Not enough money !");
                 return;
             }
 
-            playerMoney -= currentCrop.purchasePrice;
+            playerMoney -= currentCrop.buyPrice;
+            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
 
             tile.SetCrop(currentCrop);
             cropsTilemap.RefreshTile(tile.GetPosition());
@@ -279,7 +296,9 @@ namespace FarmGame
                 Debug.Log("Can't harvest yet");
                 return;
             }
+
             playerMoney += tile.GetSellWorth();
+            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
 
             cropsTilemap.SetTile(tile.GetPosition(), null);
             crops.Remove(tile);
@@ -318,6 +337,12 @@ namespace FarmGame
                 cropsTilemap.RefreshTile(crops[i].GetPosition());
             }
         }
+
+        void SetCurrentCrop(Crop c){
+            currentCrop = c;
+            MessageKit<Action>.post(Messages.SwitchAction, Action.Plant);
+        }
+
         public List<FarmField> GetFields(){
             return fields;
         }
@@ -332,17 +357,18 @@ namespace FarmGame
         
         public void SetMoney(int money){
             playerMoney = money;
+            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
         }
 
         public void SetGameTime(double time){
             gameTime = time;
+            MessageKit<double>.post(Messages.GameTick,gameTime);
         }
 
+        /*
         //For quick debug purpose only
         void OnGUI()
         {
-            GUI.Label(new Rect(10, 10, 100, 20), "Money : " + playerMoney);
-
             if (pause)
             {
                 if (GUI.Button(new Rect(10, 50, 100, 20), "Resume"))
@@ -399,9 +425,10 @@ namespace FarmGame
 
             if (GUI.Button(new Rect(10, 260, 100, 20), "None"))
             {
-                currentAction = Action.None;
+                currentAction = Action.Harvest;
             }
         }
+        */
     }
 
 }
