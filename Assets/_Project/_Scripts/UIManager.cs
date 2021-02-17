@@ -55,8 +55,8 @@ namespace FarmGame
         void Awake()
         {
 
-            MessageKit.addObserver(Messages.SwitchToTopView, () => topViewCanvas.SetActive(true));
-            MessageKit.addObserver(Messages.SwitchToField, () => topViewCanvas.SetActive(false));
+            MessageKit.addObserver(Messages.SwitchToTopView, () => OnSwitchToTopView() );
+            MessageKit.addObserver(Messages.SwitchToFieldView, () =>  OnSwitchToFieldView());
 
             MessageKit<double>.addObserver(Messages.GameTick, (d) => SetClock(d));
             MessageKit<int>.addObserver(Messages.MoneyUpdate, (i) => SetMoney(i));
@@ -75,6 +75,15 @@ namespace FarmGame
 
         }
 
+        void OnSwitchToTopView(){
+            //topViewCanvas.SetActive(true);
+            toolbox.gameObject.SetActive(false);
+        }
+
+        void OnSwitchToFieldView(){
+            //topViewCanvas.SetActive(false);
+            toolbox.gameObject.SetActive(true);
+        }
         void OpenCropSelection(){
             cropSelection.gameObject.SetActive(true);
             SwitchToolbox();
@@ -94,9 +103,9 @@ namespace FarmGame
                 return;
             }
             if(!toolboxOpened){
-                toolbox.DOMoveX(-toolbox.sizeDelta.x, toolboxSpeed).SetRelative();
+                toolbox.DOMoveX(-(toolbox.rect.size.x * toolbox.lossyScale.x), toolboxSpeed).SetRelative();
             } else {
-                toolbox.DOMoveX(toolbox.sizeDelta.x, toolboxSpeed).SetRelative();
+                toolbox.DOMoveX(toolbox.rect.size.x * toolbox.lossyScale.x, toolboxSpeed).SetRelative();
             }
 
             toolboxOpened = !toolboxOpened;

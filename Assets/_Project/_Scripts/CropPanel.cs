@@ -45,7 +45,7 @@ namespace FarmGame
             }
 
             for(int i=0;i<c.growTime.Length;i++){
-                cropTimes[i].text = c.growTime[i]+"";
+                cropTimes[i].text = c.growTime[i]+"h";
             }
         }
     }

@@ -15,10 +15,12 @@ namespace FarmGame
         [SerializeField]
         Transform animal;
         [SerializeField]
+        Animator animalAnimator;
+        [SerializeField]
         Transform basePosition;
 
         bool goToSleep = false;
-
+        bool wentToBase = false;
         const float animalSpeed = 1f;
 
         // Start is called before the first frame update
@@ -39,7 +41,6 @@ namespace FarmGame
         {
             if (night)
             {
-                Debug.Log("coucou");
                 goToSleep = true;
             }
             else
@@ -55,8 +56,17 @@ namespace FarmGame
         void MoveToNextPosition()
         {
 
+            Sequence seq = DOTween.Sequence();
+            seq.AppendInterval(Random.Range(0.5f,1f));
+            seq.AppendCallback(() => animalAnimator.SetBool("moving",true));
 
             Vector3 nextPosition = GetRandomPositionWithinSpace();
+            if (goToSleep)
+            {
+                nextPosition = basePosition.position;
+                wentToBase = true;
+            }
+
             if (nextPosition.x < animal.position.x)
             {
                 animal.localScale = new Vector3(-1, 1, 1);
@@ -66,18 +76,19 @@ namespace FarmGame
                 animal.localScale = new Vector3(1, 1, 1);
             }
 
-            if (goToSleep)
-            {
-                nextPosition = basePosition.position;
-                animal.DOMove(basePosition.position, animalSpeed*Vector3.Distance(nextPosition, animal.position)).SetEase(Ease.Linear).OnComplete(() =>
-                {
-                    animal.gameObject.SetActive(false);
-                    goToSleep = false;
-                });
-                return;
-            }
+            seq.Append(animal.DOMove(nextPosition, animalSpeed*Vector3.Distance(nextPosition, animal.position)).SetEase(Ease.Linear).OnComplete(() =>  {
+                animalAnimator.SetBool("moving",false);
 
-            animal.DOMove(nextPosition, animalSpeed*Vector3.Distance(nextPosition, animal.position)).SetEase(Ease.Linear).OnComplete(() => MoveToNextPosition());
+                if(wentToBase){
+                    goToSleep = false;
+                    wentToBase = false;
+                    animal.gameObject.SetActive(false);
+                } else {
+                    MoveToNextPosition();
+                }
+            }));
+            
+
         }
 
         Vector3 GetRandomPositionWithinSpace()

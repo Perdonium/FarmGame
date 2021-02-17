@@ -12,8 +12,7 @@ namespace FarmGame
     {
         [SerializeField]
         Vector3 topCameraPosition;
-        [SerializeField]
-        float topCameraSize = 18f;
+        float topCameraSize;
         [SerializeField]
         float fieldCameraSize = 5f;
 
@@ -25,27 +24,37 @@ namespace FarmGame
         Vector3 previousFieldCameraPosition = Vector3.zero;
 
         PixelPerfectCamera pixelPerfectCamera;
+        MatchWidth matchWidth;
+
         private void Start()
         {
             mainCamera = Camera.main;
-            pixelPerfectCamera = mainCamera.GetComponent<PixelPerfectCamera>();
+            topCameraSize = mainCamera.orthographicSize;
 
-            MessageKit.addObserver(Messages.SwitchToField, OnSwitchToField);
+            pixelPerfectCamera = mainCamera.GetComponent<PixelPerfectCamera>();
+            matchWidth = mainCamera.GetComponent<MatchWidth>();
+
+            MessageKit.addObserver(Messages.SwitchToFieldView, OnSwitchToField);
             MessageKit.addObserver(Messages.SwitchToTopView, OnSwitchToTopView);
         }
 
         void OnSwitchToTopView(){
             previousFieldCameraPosition = mainCamera.transform.position;
+            /*
             pixelPerfectCamera.enabled = false;
             mainCamera.transform.position = topCameraPosition;
-            //mainCamera.transform.DOMove(topCameraPosition, cameraSwitchSpeed);
+            */
+            mainCamera.transform.DOMove(topCameraPosition, cameraSwitchSpeed).OnComplete(() => matchWidth.enabled = true);
             mainCamera.DOOrthoSize(topCameraSize,cameraSwitchSpeed);
         }
 
         void OnSwitchToField(){
+            /*
             pixelPerfectCamera.enabled = true;
             mainCamera.transform.position = previousFieldCameraPosition;
-            //mainCamera.transform.DOMove(previousFieldCameraPosition, cameraSwitchSpeed).OnComplete(() => pixelPerfectCamera.enabled = true);
+            */
+            matchWidth.enabled = false;
+            mainCamera.transform.DOMove(previousFieldCameraPosition, cameraSwitchSpeed);
             mainCamera.DOOrthoSize(fieldCameraSize,cameraSwitchSpeed);
         }
     }

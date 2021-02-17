@@ -14,7 +14,7 @@ namespace FarmGame
 
         public static Dictionary<int, Crop> cropsDictionary;
         
-        public static int nightStart = 11;
+        public static int nightStart = 20;
         public static int nightEnd = 8;
 
         private void Awake() {
@@ -29,7 +29,7 @@ namespace FarmGame
 
     public class Messages
     {
-        public const int SwitchToField = 0;
+        public const int SwitchToFieldView = 0;
         public const int SwitchToTopView = 1;
         public const int TryBuyField = 2;
         public const int GameTick = 3;

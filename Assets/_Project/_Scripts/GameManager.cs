@@ -28,11 +28,6 @@ namespace FarmGame
         [SerializeField]
         Tilemap cropSpaceTilemap;
 
-        [SerializeField]
-        Crop plantA;
-        [SerializeField]
-        Crop plantB;
-
         Crop currentCrop;
 
         bool pause;
@@ -45,18 +40,21 @@ namespace FarmGame
 
         bool onMobile = false;
 
+        [SerializeField]
+        BoxCollider2D cameraBounds;
+
         private void Awake()
         {
             mainCam = Camera.main;
 
-            currentCrop = plantA;
-
             //Platform dependant compilation is better for performances
-            #if UNITY_IOS || UNITY_ANDROID || UNITY_WP_8_1
-                onMobile = true;
-            #else
+            #if UNITY_EDITOR
                 onMobile = false;
+            #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP_8_1
+                onMobile = true;
             #endif
+
+            Debug.Log("On mobile : "+onMobile);
         }
 
         // Start is called before the first frame update
@@ -66,7 +64,7 @@ namespace FarmGame
 
             MessageKit.addObserver(Messages.SwitchView, () => OnSwitchView());
             MessageKit.addObserver(Messages.SwitchToTopView, () => topView = true);
-            MessageKit.addObserver(Messages.SwitchToField, () => topView = false);
+            MessageKit.addObserver(Messages.SwitchToFieldView, () => topView = false);
 
             MessageKit<FarmField>.addObserver(Messages.TryBuyField, OnTryBuyField);
 
@@ -80,8 +78,10 @@ namespace FarmGame
         {
             if (!topView)
             {
+                
                 if (!onMobile)
                 {
+                
                     //Mouse down
                     if (Input.GetMouseButtonDown(0))
                     {
@@ -95,7 +95,6 @@ namespace FarmGame
 
                         Vector3 mouseWorldPosition = mainCam.ScreenToWorldPoint(Input.mousePosition);
                         Vector3Int mouseCoords = cropsTilemap.WorldToCell(mouseWorldPosition);
-
                         ManageClick(mouseCoords);
 
                         lastMouseDownPosition = Vector3.zero;
@@ -109,14 +108,16 @@ namespace FarmGame
 
                         Vector3 dragDirection = lastMouseDownPosition - Input.mousePosition;
                         mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
-
+                        CheckBoundsCamera();
 
                         lastMouseDownPosition = Input.mousePosition;
 
                     }
+                
                 }
                 else
                 {
+                
                     //Phone
 
                     if (Input.touchCount > 0)
@@ -138,14 +139,18 @@ namespace FarmGame
                             lastMouseDownPosition = Vector3.zero;
                         }
                         else if (touch.phase == TouchPhase.Moved)
-                        {
-                            mouseClick = false;
+                        {   
+                            //A little margin to help big fingers like me
+                            float diff = Vector2.Distance(lastMouseDownPosition, touch.position);
+                            if(diff>1f){
+                                mouseClick = false;
 
-                            Vector3 dragDirection = lastMouseDownPosition - (Vector3)touch.position;
-                            mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
+                                Vector3 dragDirection = lastMouseDownPosition - (Vector3)touch.position;
+                                mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
+                                CheckBoundsCamera();
 
-
-                            lastMouseDownPosition = touch.position;
+                                lastMouseDownPosition = touch.position;
+                            }
                         }
                     }
 
@@ -155,11 +160,20 @@ namespace FarmGame
 
         }
 
+        void CheckBoundsCamera(){
+            Vector2 boundsCenter = (Vector2)cameraBounds.transform.position + cameraBounds.offset;
+            Vector3 cameraPosition = mainCam.transform.position;
+            cameraPosition.x = Mathf.Clamp(cameraPosition.x,boundsCenter.x - cameraBounds.size.x / 2, boundsCenter.x + cameraBounds.size.x /2);
+            cameraPosition.y = Mathf.Clamp(cameraPosition.y,boundsCenter.y - cameraBounds.size.y / 2, boundsCenter.y + cameraBounds.size.y /2);
+
+            mainCam.transform.position = cameraPosition;
+        }
 
         void ManageClick(Vector3Int mouseCoordinates)
         {
             bool tileAlreadyPlaced = cropsTilemap.HasTile(mouseCoordinates);
             CropTile mouseTile = null;
+
             if (tileAlreadyPlaced)
             {
                 mouseTile = (CropTile)(cropsTilemap.GetTile(mouseCoordinates));
@@ -227,13 +241,13 @@ namespace FarmGame
             }
             else if (currentHour == GlobalVariables.nightEnd)
             {
-                MessageKit<bool>.post(Messages.NightSwitch, true);
+                MessageKit<bool>.post(Messages.NightSwitch, false);
             }
         }
 
         void OnSwitchView(){
             if(topView){
-                MessageKit.post(Messages.SwitchToField);
+                MessageKit.post(Messages.SwitchToFieldView);
             } else {
                 MessageKit.post(Messages.SwitchToTopView);
             }
@@ -376,70 +390,6 @@ namespace FarmGame
             MessageKit<double>.post(Messages.GameTick,gameTime);
         }
 
-        /*
-        //For quick debug purpose only
-        void OnGUI()
-        {
-            if (pause)
-            {
-                if (GUI.Button(new Rect(10, 50, 100, 20), "Resume"))
-                {
-                    ResumeGame();
-                }
-            }
-            else
-            {
-                if (GUI.Button(new Rect(10, 50, 100, 20), "Pause"))
-                {
-                    PauseGame();
-                }
-            }
-
-            if (GUI.Button(new Rect(10, 80, 100, 20), "PlantA"))
-            {
-                currentCrop = plantA;
-            }
-
-
-            if (GUI.Button(new Rect(10, 110, 100, 20), "PlantB"))
-            {
-                currentCrop = plantB;
-            }
-
-            if (GUI.Button(new Rect(10, 140, 100, 20), "TopView"))
-            {
-                if (topView)
-                {
-                    MessageKit.post(Messages.SwitchToField);
-                }
-                else
-                {
-                    MessageKit.post(Messages.SwitchToTopView);
-                }
-            }
-
-
-            if (GUI.Button(new Rect(10, 170, 100, 20), "Prepare"))
-            {
-                currentAction = Action.Prepare;
-            }
-
-            if (GUI.Button(new Rect(10, 200, 100, 20), "Plant"))
-            {
-                currentAction = Action.Plant;
-            }
-
-            if (GUI.Button(new Rect(10, 230, 100, 20), "Delete"))
-            {
-                currentAction = Action.Delete;
-            }
-
-            if (GUI.Button(new Rect(10, 260, 100, 20), "None"))
-            {
-                currentAction = Action.Harvest;
-            }
-        }
-        */
     }
 
 }
