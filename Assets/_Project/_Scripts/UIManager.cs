@@ -110,6 +110,7 @@ namespace FarmGame
                 action.text = "Plant";
                 cropSelection.gameObject.SetActive(false);
                 cropSelectionOpened = false;
+                return;
             }
             else if(a == Action.Harvest){
                 action.text = "Harvest";

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Prime31.MessageKit;
 using DG.Tweening;
+using UnityEngine.Experimental.Rendering.Universal;
 
 namespace FarmGame
 {
@@ -12,7 +13,7 @@ namespace FarmGame
         [SerializeField]
         Vector3 topCameraPosition;
         [SerializeField]
-        float topCameraSize = 10f;
+        float topCameraSize = 18f;
         [SerializeField]
         float fieldCameraSize = 5f;
 
@@ -23,21 +24,28 @@ namespace FarmGame
         [SerializeField]
         Vector3 previousFieldCameraPosition = Vector3.zero;
 
+        PixelPerfectCamera pixelPerfectCamera;
         private void Start()
         {
             mainCamera = Camera.main;
+            pixelPerfectCamera = mainCamera.GetComponent<PixelPerfectCamera>();
+
             MessageKit.addObserver(Messages.SwitchToField, OnSwitchToField);
             MessageKit.addObserver(Messages.SwitchToTopView, OnSwitchToTopView);
         }
 
         void OnSwitchToTopView(){
             previousFieldCameraPosition = mainCamera.transform.position;
-            mainCamera.transform.DOMove(topCameraPosition, cameraSwitchSpeed);
+            pixelPerfectCamera.enabled = false;
+            mainCamera.transform.position = topCameraPosition;
+            //mainCamera.transform.DOMove(topCameraPosition, cameraSwitchSpeed);
             mainCamera.DOOrthoSize(topCameraSize,cameraSwitchSpeed);
         }
 
         void OnSwitchToField(){
-            mainCamera.transform.DOMove(previousFieldCameraPosition, cameraSwitchSpeed);
+            pixelPerfectCamera.enabled = true;
+            mainCamera.transform.position = previousFieldCameraPosition;
+            //mainCamera.transform.DOMove(previousFieldCameraPosition, cameraSwitchSpeed).OnComplete(() => pixelPerfectCamera.enabled = true);
             mainCamera.DOOrthoSize(fieldCameraSize,cameraSwitchSpeed);
         }
     }

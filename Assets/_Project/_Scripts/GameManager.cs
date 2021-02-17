@@ -10,7 +10,7 @@ namespace FarmGame
     {
 
         Camera mainCam;
-        const float cameraMovementSpeed = 0.4f;
+        const float cameraMovementSpeed = 0.6f;
         const float gameTickTime = 1f; //Time in second for a game tick
         double gameTime = 0;
 
@@ -232,7 +232,6 @@ namespace FarmGame
         }
 
         void OnSwitchView(){
-            Debug.Log("coucou");
             if(topView){
                 MessageKit.post(Messages.SwitchToField);
             } else {
