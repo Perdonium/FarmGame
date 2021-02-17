@@ -12,15 +12,15 @@ namespace FarmGame
     public class FarmField : MonoBehaviour
     {
         [SerializeField]
-        Button fieldButton;
+        Button fieldButton = null;
 
         [SerializeField]
-        int cost;
+        int cost = 0;
 
         [SerializeField]
-        Tilemap fieldCropSpaceTilemap;
+        Tilemap fieldCropSpaceTilemap = null;
 
-        bool bought = false;
+        public bool bought = false;
 
         // Start is called before the first frame update
         void Start()

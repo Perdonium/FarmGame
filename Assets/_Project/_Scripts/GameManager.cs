@@ -12,15 +12,18 @@ namespace FarmGame
         Camera mainCam;
         const float cameraMovementSpeed = 0.4f;
         const float gameTickTime = 1f; //Time in second for a game tick
-        float gameTime = 0;
+        double gameTime = 0;
 
 
         List<CropTile> crops = new List<CropTile>();
 
+        [SerializeField]
+        List<FarmField> fields;
+
         int playerMoney = 50;
 
         [SerializeField]
-        Tilemap objectsTilemap;
+        Tilemap cropsTilemap;
 
         [SerializeField]
         Tilemap cropSpaceTilemap;
@@ -38,11 +41,24 @@ namespace FarmGame
         Vector3 lastMouseDownPosition = Vector3.zero;
         bool mouseClick = false;
 
+        enum Action { None, Prepare, Plant, Delete };
+
+        Action currentAction;
+
+        bool onMobile = false;
+
         private void Awake()
         {
             mainCam = Camera.main;
 
             currentCrop = plantA;
+
+            //Platform dependant compilation is better for performances
+            #if UNITY_IOS || UNITY_ANDROID || UNITY_WP_8_1
+                onMobile = true;
+            #else
+                onMobile = false;
+            #endif
         }
 
         // Start is called before the first frame update
@@ -60,55 +76,114 @@ namespace FarmGame
         {
             if (!topView)
             {
-                //Mouse down
-                if (Input.GetMouseButtonDown(0))
+                if (!onMobile)
                 {
-                    lastMouseDownPosition = Input.mousePosition;
-                    mouseClick = true;
-                }
-
-                //Mouse click
-                if (Input.GetMouseButtonUp(0) && mouseClick)
-                {
-                    Vector3 mouseScreenPosition = mainCam.ScreenToWorldPoint(Input.mousePosition);
-                    Vector3Int mouseCoords = objectsTilemap.WorldToCell(mouseScreenPosition);
-
-                    if (cropSpaceTilemap.HasTile(mouseCoords))
+                    //Mouse down
+                    if (Input.GetMouseButtonDown(0))
                     {
-                        //TODO : switch to another tilemap for crops
-                        if (!objectsTilemap.HasTile(mouseCoords))
+                        lastMouseDownPosition = Input.mousePosition;
+                        mouseClick = true;
+                    }
+
+                    //Mouse click
+                    if (Input.GetMouseButtonUp(0) && mouseClick)
+                    {
+
+                        Vector3 mouseWorldPosition = mainCam.ScreenToWorldPoint(Input.mousePosition);
+                        Vector3Int mouseCoords = cropsTilemap.WorldToCell(mouseWorldPosition);
+
+                        ManageClick(mouseCoords);
+
+                        lastMouseDownPosition = Vector3.zero;
+                    }
+
+                    //Mouse drag
+                    if (Input.GetMouseButton(0) && lastMouseDownPosition != Input.mousePosition)
+                    {
+                        mouseClick = false;
+
+
+                        Vector3 dragDirection = lastMouseDownPosition - Input.mousePosition;
+                        mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
+
+
+                        lastMouseDownPosition = Input.mousePosition;
+
+                    }
+                }
+                else
+                {
+                    //Phone
+
+                    if (Input.touchCount > 0)
+                    {
+                        Touch touch = Input.touches[0];
+
+                        if (touch.phase == TouchPhase.Began)
                         {
-                            Plant(mouseCoords);
+                            lastMouseDownPosition = Input.mousePosition;
+                            mouseClick = true;
                         }
-                        else
+                        else if (touch.phase == TouchPhase.Ended && mouseClick)
                         {
-                            TileBase mouseTile = objectsTilemap.GetTile(mouseCoords);
-                            if (mouseTile is CropTile)
-                            {
-                                Harvest((CropTile)mouseTile);
-                            }
+                            Vector3 mouseWorldPosition = mainCam.ScreenToWorldPoint(touch.position);
+                            Vector3Int mouseCoords = cropsTilemap.WorldToCell(mouseWorldPosition);
+
+                            ManageClick(mouseCoords);
+
+                            lastMouseDownPosition = Vector3.zero;
+                        }
+                        else if (touch.phase == TouchPhase.Moved)
+                        {
+                            mouseClick = false;
+
+                            Vector3 dragDirection = lastMouseDownPosition - (Vector3)touch.position;
+                            mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
+
+
+                            lastMouseDownPosition = touch.position;
                         }
                     }
 
-                    lastMouseDownPosition = Vector3.zero;
                 }
 
-                //Mouse drag
-                if(Input.GetMouseButton(0) && lastMouseDownPosition != Input.mousePosition){
-                    mouseClick = false;
-
-                    
-                    Vector3 dragDirection = lastMouseDownPosition - Input.mousePosition;
-                    mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
-
-
-                    lastMouseDownPosition = Input.mousePosition;
-
-                }
             }
 
         }
 
+
+        void ManageClick(Vector3Int mouseCoordinates)
+        {
+            bool tileAlreadyPlaced = cropsTilemap.HasTile(mouseCoordinates);
+            CropTile mouseTile = null;
+            if (tileAlreadyPlaced)
+            {
+                mouseTile = (CropTile)(cropsTilemap.GetTile(mouseCoordinates));
+            }
+
+            if (currentAction == Action.Prepare && cropSpaceTilemap.HasTile(mouseCoordinates) && !tileAlreadyPlaced)
+            {
+                Prepare(mouseCoordinates);
+            }
+            else if (currentAction == Action.Delete && tileAlreadyPlaced)
+            {
+                Delete(mouseTile);
+            }
+            else if (currentAction == Action.Plant && tileAlreadyPlaced)
+            {
+                if (mouseTile.GetCurrentCrop() == null)
+                {
+                    Plant(mouseTile);
+                }
+            }
+            else if (currentAction == Action.None && tileAlreadyPlaced)
+            {
+                if (mouseTile.CanHarvest())
+                {
+                    Harvest(mouseTile);
+                }
+            }
+        }
 
         //Update the game time
         IEnumerator GameTimeCoroutine()
@@ -125,6 +200,8 @@ namespace FarmGame
         void OnGameTick()
         {
 
+            MessageKit<double>.post(Messages.GameTick, gameTime);
+
             //Update all the crops's times
             //It's either that or a coroutine on each crop
             int cropsCount = crops.Count;
@@ -133,7 +210,7 @@ namespace FarmGame
 
                 if (crops[i].UpdateTime())
                 {
-                    objectsTilemap.RefreshTile(crops[i].GetPosition());
+                    cropsTilemap.RefreshTile(crops[i].GetPosition());
                 }
             }
         }
@@ -147,7 +224,12 @@ namespace FarmGame
             }
             playerMoney -= field.GetCost();
 
+            BuyField(field);
 
+
+        }
+
+        public void BuyField(FarmField field){
             Tilemap fieldMap = field.GetFieldTilemap();
             BoundsInt fieldBounds = fieldMap.cellBounds;
             Vector3Int vec = Vector3Int.zero;
@@ -166,30 +248,28 @@ namespace FarmGame
 
             field.SetBought(true);
         }
-
-        public void Plant(Vector3Int position)
+        public void Prepare(Vector3Int position)
         {
-            if (currentCrop == null)
-            {
-                return;
-            }
+            //TODO : optimize by object pooling ?
+            CropTile newCrop = ScriptableObject.CreateInstance<CropTile>();
+            newCrop.SetPosition(position);
+            cropsTilemap.SetTile(position, newCrop);
 
+            crops.Add(newCrop);
+        }
+
+        public void Plant(CropTile tile)
+        {
             if (playerMoney < currentCrop.purchasePrice)
             {
                 Debug.Log("Not enough money !");
                 return;
             }
 
-            Debug.Log("Plant");
-
             playerMoney -= currentCrop.purchasePrice;
 
-            //TODO : optimize by object pooling ?
-            CropTile newCrop = ScriptableObject.CreateInstance<CropTile>();
-            newCrop.Init(position, currentCrop);
-            objectsTilemap.SetTile(position, newCrop);
-
-            crops.Add(newCrop);
+            tile.SetCrop(currentCrop);
+            cropsTilemap.RefreshTile(tile.GetPosition());
         }
 
         public void Harvest(CropTile tile)
@@ -201,7 +281,14 @@ namespace FarmGame
             }
             playerMoney += tile.GetSellWorth();
 
-            objectsTilemap.SetTile(tile.GetPosition(), null);
+            cropsTilemap.SetTile(tile.GetPosition(), null);
+            crops.Remove(tile);
+            GameObject.Destroy(tile);
+        }
+
+        public void Delete(CropTile tile)
+        {
+            cropsTilemap.SetTile(tile.GetPosition(), null);
             crops.Remove(tile);
             GameObject.Destroy(tile);
         }
@@ -216,6 +303,39 @@ namespace FarmGame
         {
             Time.timeScale = 1f;
             pause = false;
+        }
+
+    
+        public List<CropTile> GetCrops(){
+            return crops;
+        }
+
+        public void SetCrops(List<CropTile> c){
+            crops.Clear();
+            crops = c;
+            for(int i=0;i<crops.Count;i++){
+                cropsTilemap.SetTile(crops[i].GetPosition(),crops[i]);
+                cropsTilemap.RefreshTile(crops[i].GetPosition());
+            }
+        }
+        public List<FarmField> GetFields(){
+            return fields;
+        }
+
+        public int GetMoney(){
+            return playerMoney;
+        }
+
+        public double GetGameTime(){
+            return gameTime;
+        }
+        
+        public void SetMoney(int money){
+            playerMoney = money;
+        }
+
+        public void SetGameTime(double time){
+            gameTime = time;
         }
 
         //For quick debug purpose only
@@ -259,6 +379,27 @@ namespace FarmGame
                 {
                     MessageKit.post(Messages.SwitchToTopView);
                 }
+            }
+
+
+            if (GUI.Button(new Rect(10, 170, 100, 20), "Prepare"))
+            {
+                currentAction = Action.Prepare;
+            }
+
+            if (GUI.Button(new Rect(10, 200, 100, 20), "Plant"))
+            {
+                currentAction = Action.Plant;
+            }
+
+            if (GUI.Button(new Rect(10, 230, 100, 20), "Delete"))
+            {
+                currentAction = Action.Delete;
+            }
+
+            if (GUI.Button(new Rect(10, 260, 100, 20), "None"))
+            {
+                currentAction = Action.None;
             }
         }
     }

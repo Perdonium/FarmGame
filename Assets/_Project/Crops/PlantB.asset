@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e5b3fab22adb4f799fa6c858a5cf996, type: 3}
   m_Name: PlantB
   m_EditorClassIdentifier: 
+  cropID: 1
   name: PlantB
   growTime: 02000000040000000600000008000000
   sprites:
