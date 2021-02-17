@@ -217,6 +217,18 @@ namespace FarmGame
                     cropsTilemap.RefreshTile(crops[i].GetPosition());
                 }
             }
+
+
+            double currentHour = (((gameTime % 24) + 8) % 24);
+
+            if (currentHour == GlobalVariables.nightStart)
+            {
+                MessageKit<bool>.post(Messages.NightSwitch, true);
+            }
+            else if (currentHour == GlobalVariables.nightEnd)
+            {
+                MessageKit<bool>.post(Messages.NightSwitch, true);
+            }
         }
 
         void OnSwitchView(){

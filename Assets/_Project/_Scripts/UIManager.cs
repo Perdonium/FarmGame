@@ -51,7 +51,7 @@ namespace FarmGame
 
         [SerializeField]
         RectTransform cropSelection;
-
+        bool cropSelectionOpened = false;
         void Awake()
         {
 
@@ -61,6 +61,8 @@ namespace FarmGame
             MessageKit<double>.addObserver(Messages.GameTick, (d) => SetClock(d));
             MessageKit<int>.addObserver(Messages.MoneyUpdate, (i) => SetMoney(i));
             MessageKit<Action>.addObserver(Messages.SwitchAction, (a) => SetAction(a));
+
+            MessageKit<bool>.addObserver(Messages.NightSwitch, (b) => OnNightSwitch(b));
 
             prepareButton.onClick.AddListener(() => MessageKit<Action>.post(Messages.SwitchAction, Action.Prepare));
             plantButton.onClick.AddListener(() => OpenCropSelection());
@@ -75,9 +77,22 @@ namespace FarmGame
 
         void OpenCropSelection(){
             cropSelection.gameObject.SetActive(true);
+            SwitchToolbox();
+            cropSelectionOpened = true;
         }
         
+        void OnNightSwitch(bool b){
+            if(b){
+                clock.DOColor(nightColor, 0.5f);
+            } else {
+                clock.DOColor(Color.white, 0.5f);
+            }
+        }
+
         void SwitchToolbox(){
+            if(cropSelectionOpened){
+                return;
+            }
             if(!toolboxOpened){
                 toolbox.DOMoveX(-toolbox.sizeDelta.x, toolboxSpeed).SetRelative();
             } else {
@@ -94,6 +109,7 @@ namespace FarmGame
             else if(a == Action.Plant){
                 action.text = "Plant";
                 cropSelection.gameObject.SetActive(false);
+                cropSelectionOpened = false;
             }
             else if(a == Action.Harvest){
                 action.text = "Harvest";
@@ -107,15 +123,6 @@ namespace FarmGame
         void SetClock(double time)
         {
             double currentHour = (((time % 24) + 8) % 24);
-
-            if (currentHour == GlobalVariables.nightStart)
-            {
-                clock.DOColor(nightColor, 0.5f);
-            }
-            else if (currentHour == GlobalVariables.nightEnd)
-            {
-                clock.DOColor(Color.white, 0.5f);
-            }
             clock.text = currentHour.ToString() + "h";
         }
 

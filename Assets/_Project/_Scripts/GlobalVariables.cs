@@ -36,6 +36,7 @@ namespace FarmGame
         public const int SwitchAction = 5;
         public const int SwitchView = 6;
         public const int CropSet = 7;
+        public const int NightSwitch = 8;
     }
 
     public enum Action { Harvest, Prepare, Plant, Delete };
