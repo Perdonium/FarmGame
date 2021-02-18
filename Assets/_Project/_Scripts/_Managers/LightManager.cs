@@ -8,19 +8,26 @@ using Prime31.MessageKit;
 
 namespace FarmGame
 {
+    //Manage the lights when switching between day and night
     public class LightManager : MonoBehaviour
     {
-        [SerializeField]
-        Transform nightLightParent;
-        List<Light2D> nightLights;
+
+        #region Properties
 
         [SerializeField]
-        Light2D dayLight;
+        Transform nightLightParent; //Rather use the parent and generate a list in Start() than a List<Light2D> in the inspector
+        List<Light2D> nightLights; //Initialized in Start()
+
+        [SerializeField]
+        Light2D dayLight; //The sun
 
         bool inTransition;
         bool toNight;
+
         float lightTransitionValue = 0;
         const float transitionSpeed = 1.5f;
+
+        #endregion
 
         // Start is called before the first frame update
         void Start()
@@ -30,32 +37,43 @@ namespace FarmGame
             MessageKit<bool>.addObserver(Messages.NightSwitch, (b) => OnNightSwitch(b));
         }
 
-        void OnNightSwitch(bool night){
+        void OnNightSwitch(bool night)
+        {
             inTransition = true;
             toNight = night;
             lightTransitionValue = 0;
+            //DOTween doesn't implement Light2D so i do it by hand
             DOTween.To(() => lightTransitionValue, x => lightTransitionValue = x, 1, 2).OnComplete(() => inTransition = false);
-            
+            StartCoroutine(LightSwitchCoroutine());
         }
 
-        // Update is called once per frame
-        void Update()
+        //Here I use a coroutine as a "temporary Update()" to transition the lights
+        IEnumerator LightSwitchCoroutine()
         {
-            if(inTransition){
-                if(toNight){
-                    dayLight.intensity = Mathf.Clamp(1-lightTransitionValue,0.4f,1f);
+            while (inTransition)
+            {
+                if (toNight)
+                {
+                    dayLight.intensity = Mathf.Clamp(1 - lightTransitionValue, 0.4f, 1f);
 
-                    for(int i=0;i<nightLights.Count;i++){
+                    for (int i = 0; i < nightLights.Count; i++)
+                    {
                         nightLights[i].intensity = lightTransitionValue;
                     }
-                } else {
-                    dayLight.intensity = Mathf.Clamp(lightTransitionValue,0.4f, 1f);
-
-                    for(int i=0;i<nightLights.Count;i++){
-                        nightLights[i].intensity = 1-lightTransitionValue;
-                    }                 
                 }
+                else
+                {
+                    dayLight.intensity = Mathf.Clamp(lightTransitionValue, 0.4f, 1f);
+
+                    for (int i = 0; i < nightLights.Count; i++)
+                    {
+                        nightLights[i].intensity = 1 - lightTransitionValue;
+                    }
+                }
+
+                yield return new WaitForEndOfFrame();
             }
         }
     }
+
 }

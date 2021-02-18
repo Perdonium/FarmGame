@@ -9,16 +9,25 @@ using Prime31.MessageKit;
 
 namespace FarmGame
 {
+    //Contains the Save() and Load() functions
     public class SaveManager : MonoBehaviour
     {
-        string filename = "savefile";
-        string saveFilePath = "";
+
+        #region Properties
 
         GameManager gameManager;
 
+        string filename = "savefile";
+        string saveFilePath = ""; //Changes whether the game is launched on PC or mobile
+
         bool onMobile = false;
+
+        #endregion
+
         private void Awake()
         {
+            gameManager = GetComponent<GameManager>();
+
             //Platform dependant compilation is better for performances
             #if UNITY_EDITOR
                 onMobile = false;
@@ -35,11 +44,13 @@ namespace FarmGame
                 saveFilePath = Application.dataPath + "/" + filename + ".txt";
             }
 
-            gameManager = GetComponent<GameManager>();
-            Load();
+
 
             MessageKit<double>.addObserver(Messages.GameTick, (d) => Save());
             MessageKit.addObserver(Messages.NewData, () => Save());
+
+            //Load on start
+            Load();
         }
 
 
@@ -83,8 +94,6 @@ namespace FarmGame
             gd.crops = cropsData;
 
             string jsonData = JsonUtility.ToJson(gd);
-
-
             File.WriteAllText(saveFilePath, jsonData);
         }
 
@@ -100,6 +109,7 @@ namespace FarmGame
                 gameManager.SetMoney(savedData.money);
                 gameManager.SetGameTime(savedData.gameTime);
 
+                //Load fields
                 List<FarmField> fields = gameManager.GetFields();
                 for (int i = 0; i < savedData.boughtFields.Count; i++)
                 {
@@ -109,6 +119,7 @@ namespace FarmGame
                     }
                 }
 
+                //Load crops
                 List<CropTile> cropTiles = new List<CropTile>();
                 for (int i = 0; i < savedData.crops.Count; i++)
                 {
@@ -149,7 +160,7 @@ namespace FarmGame
     {
         public int money;
         public double gameTime;
-        public List<int> boughtFields;
+        public List<int> boughtFields; //1 stands for bought, 0 for not bought (could use bool but maybe there will be more options for fields)
         public List<CropData> crops;
     }
 }

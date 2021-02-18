@@ -2,21 +2,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using Prime31.MessageKit;
 
 namespace FarmGame
 {
+    //A crop tile for a tilemap
     public class CropTile : Tile
     {
-        static int maxPrepareTime = 10;
+        #region Properties
+        static int maxPrepareTime = 24;
         public static Sprite prepareSprite;
 
         Crop currentCrop = null;
         int currentCropTime = 0;
         int currentCropStep = 0;
 
+        #endregion
+        
         Vector3Int position;
 
-        //Return true if it needs to be updated
+        //Return true if it needs to be updated (visually) by the tilemap
         public bool UpdateTime()
         {
 
@@ -31,11 +36,24 @@ namespace FarmGame
                 }
             } else {
                 if(currentCropTime>maxPrepareTime){
-                    //TODO : Remove
+                    MessageKit<CropTile>.post(Messages.PreparedDecay,this);
                 }
             }
             return false;
         }
+
+        public bool CanHarvest()
+        {
+            return currentCropStep >= 2;
+        }
+
+        public int GetSellWorth()
+        {
+            //The crop is worth nothing if past its 3rd stage
+            return (currentCropStep == 2) ? currentCrop.sellPrice : 0;
+        }
+
+        #region GetSet
 
         public void SetPosition(Vector3Int pos)
         {
@@ -81,15 +99,8 @@ namespace FarmGame
         public void SetCurrentCropStep(int step){
             currentCropStep = step;
         }
-        public bool CanHarvest()
-        {
-            return currentCropStep >= 2;
-        }
 
-        public int GetSellWorth()
-        {
-            return (currentCropStep == 2) ? currentCrop.sellPrice : 0;
-        }
+        #endregion
     }
 
 }

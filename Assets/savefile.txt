@@ -1,1 +1,1 @@
-{"money":50,"gameTime":22.0,"boughtFields":[0,0,0,0],"crops":[]}
+{"money":250,"gameTime":69.0,"boughtFields":[0,0,1,0],"crops":[]}

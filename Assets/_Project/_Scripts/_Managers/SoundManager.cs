@@ -6,8 +6,11 @@ using DG.Tweening;
 
 namespace FarmGame
 {
+    //Basic sound manager
     public class SoundManager : MonoBehaviour
     {
+        #region Properties
+
         [SerializeField]
         AudioSource musicSource;
 
@@ -16,6 +19,9 @@ namespace FarmGame
 
         [SerializeField]
         AudioClip positiveEvent;
+
+        #endregion
+        
         private void Start()
         {
             MessageKit<bool>.addObserver(Messages.NightSwitch,(b) => OnNightSwitch(b));

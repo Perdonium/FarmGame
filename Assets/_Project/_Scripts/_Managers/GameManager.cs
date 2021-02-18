@@ -12,9 +12,10 @@ namespace FarmGame
     public class GameManager : MonoBehaviour
     {
 
+        #region Properties
+
         Camera mainCam;
         float cameraMovementSpeed = 0.6f;
-
 
         [SerializeField]
         float gameTickTime = 1f; //Time in second for a game tick
@@ -27,7 +28,7 @@ namespace FarmGame
         [SerializeField]
         Tilemap cropsTilemap;
         [SerializeField]
-        Tilemap cropSpaceTilemap;
+        Tilemap cropsAvailableTilemap;
         Crop currentCrop;
 
 
@@ -42,10 +43,10 @@ namespace FarmGame
         Action currentAction;
         bool onMobile = false;
 
-        [SerializeField]
-        BoxCollider2D cameraBounds;
 
         bool askedReset = false;
+
+        #endregion
 
         private void Awake()
         {
@@ -70,18 +71,17 @@ namespace FarmGame
             MessageKit.addObserver(Messages.SwitchView, () => OnSwitchView());
             MessageKit.addObserver(Messages.SwitchToTopView, () => topView = true);
             MessageKit.addObserver(Messages.SwitchToFieldView, () => topView = false);
-
             MessageKit<FarmField>.addObserver(Messages.TryBuyField, OnTryBuyField);
+            MessageKit<Action>.addObserver(Messages.SwitchAction, (a) => SwitchAction(a));
+            MessageKit<Crop>.addObserver(Messages.CropSet, (c) => SetCurrentCrop(c));
+            MessageKit.addObserver(Messages.ResetPressed, () => AskReset());
+            MessageKit<CropTile>.addObserver(Messages.PreparedDecay, (ct) => Delete(ct));
 
             MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
 
-            MessageKit<Action>.addObserver(Messages.SwitchAction, (a) => SwitchAction(a));
-            MessageKit<Crop>.addObserver(Messages.CropSet, (c) => SetCurrentCrop(c));
-
-            MessageKit.addObserver(Messages.ResetPressed, () => AskReset());
-
         }
 
+        //Update() is used for controls
         private void Update()
         {
             if (!topView)
@@ -89,6 +89,8 @@ namespace FarmGame
 
                 if (!onMobile)
                 {
+
+                    //PC
 
                     //Mouse down
                     if (Input.GetMouseButtonDown(0))
@@ -116,7 +118,7 @@ namespace FarmGame
 
                         Vector3 dragDirection = lastMouseDownPosition - Input.mousePosition;
                         mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
-                        CheckBoundsCamera();
+                        MessageKit.post(Messages.CameraMoved);
 
                         lastMouseDownPosition = Input.mousePosition;
 
@@ -137,6 +139,7 @@ namespace FarmGame
                             lastMouseDownPosition = Input.mousePosition;
                             mouseClick = true;
                         }
+                        //Click
                         else if (touch.phase == TouchPhase.Ended && mouseClick)
                         {
                             Vector3 mouseWorldPosition = mainCam.ScreenToWorldPoint(touch.position);
@@ -146,6 +149,7 @@ namespace FarmGame
 
                             lastMouseDownPosition = Vector3.zero;
                         }
+                        //Drag
                         else if (touch.phase == TouchPhase.Moved)
                         {
                             //A little margin to help big fingers like mine
@@ -156,7 +160,7 @@ namespace FarmGame
 
                                 Vector3 dragDirection = lastMouseDownPosition - (Vector3)touch.position;
                                 mainCam.transform.position += dragDirection.normalized * cameraMovementSpeed;
-                                CheckBoundsCamera();
+                                MessageKit.post(Messages.CameraMoved);
 
                                 lastMouseDownPosition = touch.position;
                             }
@@ -169,19 +173,7 @@ namespace FarmGame
 
         }
 
-        void CheckBoundsCamera()
-        {
-            Vector2 boundsCenter = (Vector2)cameraBounds.transform.position + cameraBounds.offset;
-            Vector3 cameraPosition = mainCam.transform.position;
-
-            float height = 2f * mainCam.orthographicSize;
-            float width = height * mainCam.aspect;
-            cameraPosition.x = Mathf.Clamp(cameraPosition.x, boundsCenter.x - cameraBounds.size.x / 2 + width / 2, boundsCenter.x + cameraBounds.size.x / 2 - width / 2);
-            cameraPosition.y = Mathf.Clamp(cameraPosition.y, boundsCenter.y - cameraBounds.size.y / 2 + height / 2, boundsCenter.y + cameraBounds.size.y / 2 - height / 2);
-
-            mainCam.transform.position = cameraPosition;
-        }
-
+        //Manage a player's click based on its position
         void ManageClick(Vector3Int mouseCoordinates)
         {
 
@@ -193,7 +185,7 @@ namespace FarmGame
                 mouseTile = (CropTile)(cropsTilemap.GetTile(mouseCoordinates));
             }
 
-            if (currentAction == Action.Prepare && cropSpaceTilemap.HasTile(mouseCoordinates) && !tileAlreadyPlaced)
+            if (currentAction == Action.Prepare && cropsAvailableTilemap.HasTile(mouseCoordinates) && !tileAlreadyPlaced)
             {
                 Prepare(mouseCoordinates);
                 MessageKit.post(Messages.NewData);
@@ -261,6 +253,7 @@ namespace FarmGame
             {
                 MessageKit<bool>.post(Messages.NightSwitch, false);
 
+                //Just a little help for the player in case they get stuck
                 playerMoney += 100;
                 MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
             }
@@ -299,13 +292,12 @@ namespace FarmGame
             MessageKit.post(Messages.PositiveEvent);
 
             BuyField(field);
-
-
         }
 
         public void BuyField(FarmField field)
         {
 
+            //Merge the field tilemap with the cropsAvailableTilemap
             Tilemap fieldMap = field.GetFieldTilemap();
             BoundsInt fieldBounds = fieldMap.cellBounds;
             Vector3Int vec = Vector3Int.zero;
@@ -317,7 +309,7 @@ namespace FarmGame
                     vec.y = j;
                     if (fieldMap.HasTile(vec))
                     {
-                        cropSpaceTilemap.SetTile(vec, fieldMap.GetTile(vec));
+                        cropsAvailableTilemap.SetTile(vec, fieldMap.GetTile(vec));
                     }
                 }
             }
@@ -327,7 +319,6 @@ namespace FarmGame
 
         public void Prepare(Vector3Int position)
         {
-            //TODO : optimize by object pooling ?
             CropTile newCrop = ScriptableObject.CreateInstance<CropTile>();
             newCrop.SetPosition(position);
             cropsTilemap.SetTile(position, newCrop);
@@ -377,6 +368,8 @@ namespace FarmGame
             crops.Remove(tile);
             GameObject.Destroy(tile);
         }
+
+        #region GetSet
 
         public List<CropTile> GetCrops()
         {
@@ -435,6 +428,8 @@ namespace FarmGame
             }
         }
 
+        #endregion
+
         public void AskReset()
         {
             if(askedReset){
@@ -458,8 +453,9 @@ namespace FarmGame
                 fields[i].SetBought(false);
             }
 
-            cropSpaceTilemap.ClearAllTiles();
+            cropsAvailableTilemap.ClearAllTiles();
             cropsTilemap.ClearAllTiles();
+
             crops.Clear();
             gameTime = gameTime % 24;
             playerMoney = 50;

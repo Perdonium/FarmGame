@@ -10,6 +10,7 @@ namespace FarmGame
         [SerializeField]
         Sprite cropTilePrepareSprite;
 
+        //I initialize the "real" static variables in Awake based on these inspector values
         [SerializeField]
         List<Crop> availableCrops;
 
@@ -25,6 +26,7 @@ namespace FarmGame
         private void Awake() {
             CropTile.prepareSprite = cropTilePrepareSprite;
 
+            //Initialize the cropsDictionary
             cropsDictionary = new Dictionary<int, Crop>();
             for(int i=0;i<availableCrops.Count;i++){
                 cropsDictionary.Add(availableCrops[i].cropID, availableCrops[i]);
@@ -34,6 +36,7 @@ namespace FarmGame
         }
     }
 
+    //The messages used with the MessageKit
     public class Messages
     {
         public const int SwitchToFieldView = 0;
@@ -49,6 +52,8 @@ namespace FarmGame
         public const int PositiveEvent = 10;
         public const int CropPlanted = 11;
         public const int ResetPressed = 12;
+        public const int PreparedDecay = 13;
+        public const int CameraMoved = 14;
     }
 
     public enum Action { Harvest, Prepare, Plant, Delete };

@@ -4,9 +4,12 @@ using UnityEngine;
 
 [ExecuteInEditMode]
 [RequireComponent(typeof(Camera))]
+
+//Force the Camera to always match the width given
+//Good when you want to bound a 2D Camera
+//Used when using the top view
 public class MatchWidth : MonoBehaviour {
 
-    // Set this to the in-world distance between the left & right edges of your scene.
     public float sceneWidth = 10;
 
     Camera _camera;
@@ -15,7 +18,7 @@ public class MatchWidth : MonoBehaviour {
     }
 
     // Adjust the camera's height so the desired scene width fits in view
-    // even if the screen/window size changes dynamically.
+    // even if the screen/window size changes dynamically
     void Update() {
         float unitsPerPixel = sceneWidth / Screen.width;
 

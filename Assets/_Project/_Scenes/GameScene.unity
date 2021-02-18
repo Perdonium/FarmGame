@@ -14534,7 +14534,7 @@ Camera:
   far clip plane: 5000
   field of view: 40
   orthographic: 1
-  orthographic size: 15.810811
+  orthographic size: 17.63158
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -25869,7 +25869,6 @@ MonoBehaviour:
   cropsTilemap: {fileID: 1018386479}
   cropSpaceTilemap: {fileID: 1368448742}
   playerMoney: 100
-  cameraBounds: {fileID: 1054635541}
 --- !u!4 &1260010474
 Transform:
   m_ObjectHideFlags: 0
@@ -25900,6 +25899,7 @@ MonoBehaviour:
   fieldCameraSize: 8
   cameraSwitchSpeed: 0.5
   previousFieldCameraPosition: {x: 0, y: 0, z: -2}
+  cameraBounds: {fileID: 1054635541}
 --- !u!114 &1260010476
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25912,7 +25912,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 111c32726a0904f88944ce916a7e6576, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  topViewCanvas: {fileID: 188614801}
+  worldSpaceCanvas: {fileID: 0}
   clock: {fileID: 662515722}
   money: {fileID: 1732923901}
   action: {fileID: 1963601834}

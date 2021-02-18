@@ -10,8 +10,11 @@ namespace FarmGame
 {
     public class UIManager : MonoBehaviour
     {
+        
+        #region Properties
+
         [SerializeField]
-        GameObject topViewCanvas;
+        GameObject worldSpaceCanvas;
 
         [SerializeField]
         TextMeshProUGUI clock;
@@ -48,11 +51,14 @@ namespace FarmGame
         [SerializeField]
         RectTransform toolbox;
         bool toolboxOpened = false;
-        const float toolboxSpeed = 0.5f;
+        const float toolboxSpeed = 0.5f; //The toolbox expand/collapse speed
 
         [SerializeField]
         RectTransform cropSelection;
         bool cropSelectionOpened = false;
+
+        #endregion
+
         void Awake()
         {
 
@@ -78,16 +84,18 @@ namespace FarmGame
         }
 
         void OnSwitchToTopView(){
-            //topViewCanvas.SetActive(true);
             toolbox.gameObject.SetActive(false);
         }
 
         void OnSwitchToFieldView(){
-            //topViewCanvas.SetActive(false);
             toolbox.gameObject.SetActive(true);
         }
         void OpenCropSelection(){
+            Vector3 cropSelectionScale = cropSelection.localScale;
+            cropSelection.localScale = Vector3.zero;
             cropSelection.gameObject.SetActive(true);
+            cropSelection.DOScale(cropSelectionScale, 0.5f);
+
             SwitchToolbox();
             cropSelectionOpened = true;
         }
@@ -104,6 +112,7 @@ namespace FarmGame
             if(cropSelectionOpened){
                 return;
             }
+            //Move the toolbox based on its width (nice for dealing with multiple resolutions)
             if(!toolboxOpened){
                 toolbox.DOMoveX(-(toolbox.rect.size.x * toolbox.lossyScale.x), toolboxSpeed).SetRelative();
             } else {
@@ -119,7 +128,9 @@ namespace FarmGame
             }
             else if(a == Action.Plant){
                 action.text = "Plant";
-                cropSelection.gameObject.SetActive(false);
+                Vector3 cropSelectionScale = cropSelection.localScale;
+                cropSelection.DOScale(Vector3.zero,0.5f).OnComplete(()=> {cropSelection.localScale = cropSelectionScale;
+                                                                                cropSelection.gameObject.SetActive(false);});
                 cropSelectionOpened = false;
                 return;
             }

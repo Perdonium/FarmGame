@@ -10,8 +10,12 @@ using TMPro;
 
 namespace FarmGame
 {
+    //A field buyable by the player
     public class FarmField : MonoBehaviour
     {
+
+        #region Properties
+
         [SerializeField]
         Button fieldButton = null;
 
@@ -19,9 +23,11 @@ namespace FarmGame
         int cost = 0;
 
         [SerializeField]
-        Tilemap fieldCropSpaceTilemap = null;
+        Tilemap fieldCropSpaceTilemap = null; //The tilemap of crop region it unlocks when bought
 
         public bool bought = false;
+
+        #endregion
 
         // Start is called before the first frame update
         void Start()
