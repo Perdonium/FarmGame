@@ -48,6 +48,7 @@ namespace FarmGame
         public const int NewData = 9;
         public const int PositiveEvent = 10;
         public const int CropPlanted = 11;
+        public const int ResetPressed = 12;
     }
 
     public enum Action { Harvest, Prepare, Plant, Delete };

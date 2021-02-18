@@ -40,7 +40,8 @@ namespace FarmGame
 
         [SerializeField]
         Button topCamButton;
-
+        [SerializeField]
+        Button resetButton;
         [SerializeField]
         Button toolboxButton;
 
@@ -70,6 +71,7 @@ namespace FarmGame
             deleteButton.onClick.AddListener(() => MessageKit<Action>.post(Messages.SwitchAction, Action.Delete));
 
             topCamButton.onClick.AddListener(() => MessageKit.post(Messages.SwitchView));
+            resetButton.onClick.AddListener(() => MessageKit.post(Messages.ResetPressed));
         
             toolboxButton.onClick.AddListener(() => SwitchToolbox());
 

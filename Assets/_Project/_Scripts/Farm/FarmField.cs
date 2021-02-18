@@ -48,6 +48,8 @@ namespace FarmGame
 
             if(b){
                 fieldButton.gameObject.SetActive(false);
+            } else {
+                fieldButton.gameObject.SetActive(true);
             }
         }
     }

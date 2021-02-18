@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using Prime31.MessageKit;
 using CodeMonkey.Utils;
+using UnityEditor;
+using DG.Tweening;
 
 namespace FarmGame
 {
@@ -11,7 +13,7 @@ namespace FarmGame
     {
 
         Camera mainCam;
-        const float cameraMovementSpeed = 0.6f;
+        float cameraMovementSpeed = 0.6f;
 
 
         [SerializeField]
@@ -32,7 +34,6 @@ namespace FarmGame
         [SerializeField]
         int playerMoney = 50;
 
-        bool pause;
         bool topView = true; //The game starts on top view
 
 
@@ -44,6 +45,8 @@ namespace FarmGame
         [SerializeField]
         BoxCollider2D cameraBounds;
 
+        bool askedReset = false;
+
         private void Awake()
         {
             mainCam = Camera.main;
@@ -53,9 +56,10 @@ namespace FarmGame
                 onMobile = false;
             #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP_8_1
                 onMobile = true;
+                cameraMovementSpeed = 1f;
             #endif
 
-            Debug.Log("On mobile : "+onMobile);
+            Debug.Log("On mobile : " + onMobile);
         }
 
         // Start is called before the first frame update
@@ -69,20 +73,23 @@ namespace FarmGame
 
             MessageKit<FarmField>.addObserver(Messages.TryBuyField, OnTryBuyField);
 
-            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
+            MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
 
             MessageKit<Action>.addObserver(Messages.SwitchAction, (a) => SwitchAction(a));
             MessageKit<Crop>.addObserver(Messages.CropSet, (c) => SetCurrentCrop(c));
+
+            MessageKit.addObserver(Messages.ResetPressed, () => AskReset());
+
         }
 
         private void Update()
         {
             if (!topView)
             {
-                
+
                 if (!onMobile)
                 {
-                
+
                     //Mouse down
                     if (Input.GetMouseButtonDown(0))
                     {
@@ -114,11 +121,11 @@ namespace FarmGame
                         lastMouseDownPosition = Input.mousePosition;
 
                     }
-                
+
                 }
                 else
                 {
-                
+
                     //Phone
 
                     if (Input.touchCount > 0)
@@ -140,10 +147,11 @@ namespace FarmGame
                             lastMouseDownPosition = Vector3.zero;
                         }
                         else if (touch.phase == TouchPhase.Moved)
-                        {   
+                        {
                             //A little margin to help big fingers like mine
                             float diff = Vector2.Distance(lastMouseDownPosition, touch.position);
-                            if(diff>1f){
+                            if (diff > 5f)
+                            {
                                 mouseClick = false;
 
                                 Vector3 dragDirection = lastMouseDownPosition - (Vector3)touch.position;
@@ -161,14 +169,15 @@ namespace FarmGame
 
         }
 
-        void CheckBoundsCamera(){
+        void CheckBoundsCamera()
+        {
             Vector2 boundsCenter = (Vector2)cameraBounds.transform.position + cameraBounds.offset;
             Vector3 cameraPosition = mainCam.transform.position;
 
             float height = 2f * mainCam.orthographicSize;
             float width = height * mainCam.aspect;
-            cameraPosition.x = Mathf.Clamp(cameraPosition.x,boundsCenter.x - cameraBounds.size.x / 2 + width/2, boundsCenter.x + cameraBounds.size.x /2 - width/2);
-            cameraPosition.y = Mathf.Clamp(cameraPosition.y,boundsCenter.y - cameraBounds.size.y / 2 + height/2, boundsCenter.y + cameraBounds.size.y /2 - height/2);
+            cameraPosition.x = Mathf.Clamp(cameraPosition.x, boundsCenter.x - cameraBounds.size.x / 2 + width / 2, boundsCenter.x + cameraBounds.size.x / 2 - width / 2);
+            cameraPosition.y = Mathf.Clamp(cameraPosition.y, boundsCenter.y - cameraBounds.size.y / 2 + height / 2, boundsCenter.y + cameraBounds.size.y / 2 - height / 2);
 
             mainCam.transform.position = cameraPosition;
         }
@@ -251,18 +260,27 @@ namespace FarmGame
             else if (currentHour == GlobalVariables.nightEnd)
             {
                 MessageKit<bool>.post(Messages.NightSwitch, false);
+
+                playerMoney += 100;
+                MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
             }
         }
 
-        void OnSwitchView(){
-            if(topView){
+        void OnSwitchView()
+        {
+            if (topView)
+            {
                 MessageKit.post(Messages.SwitchToFieldView);
-            } else {
+            }
+            else
+            {
                 MessageKit.post(Messages.SwitchToTopView);
+                lastMouseDownPosition = Vector3.zero;
             }
         }
 
-        void SwitchAction(Action a){
+        void SwitchAction(Action a)
+        {
             currentAction = a;
         }
 
@@ -271,13 +289,13 @@ namespace FarmGame
             if (field.GetCost() > playerMoney)
             {
                 Debug.Log("Not enough money to buy field");
-                UtilsClass.CreateWorldTextPopup("Not enough money",mainCam.ScreenToWorldPoint(lastMouseDownPosition));
+                UtilsClass.CreateWorldTextPopup("Not enough money", (lastMouseDownPosition == Vector3.zero)?mainCam.transform.position:mainCam.ScreenToWorldPoint(lastMouseDownPosition));
                 return;
             }
 
             playerMoney -= field.GetCost();
-            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
-            UtilsClass.CreateWorldTextPopup("Field bought !",mainCam.ScreenToWorldPoint(lastMouseDownPosition));
+            MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
+            UtilsClass.CreateWorldTextPopup("Field bought !", field.transform.position);
             MessageKit.post(Messages.PositiveEvent);
 
             BuyField(field);
@@ -285,8 +303,9 @@ namespace FarmGame
 
         }
 
-        public void BuyField(FarmField field){
-            
+        public void BuyField(FarmField field)
+        {
+
             Tilemap fieldMap = field.GetFieldTilemap();
             BoundsInt fieldBounds = fieldMap.cellBounds;
             Vector3Int vec = Vector3Int.zero;
@@ -321,13 +340,13 @@ namespace FarmGame
             if (playerMoney < currentCrop.buyPrice)
             {
                 Debug.Log("Not enough money !");
-                UtilsClass.CreateWorldTextPopup("Not enough money",mainCam.ScreenToWorldPoint(lastMouseDownPosition));
+                UtilsClass.CreateWorldTextPopup("Not enough money", mainCam.ScreenToWorldPoint(lastMouseDownPosition));
                 return;
             }
 
             playerMoney -= currentCrop.buyPrice;
-            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
-            UtilsClass.CreateWorldTextPopup("-"+currentCrop.buyPrice+"$",mainCam.ScreenToWorldPoint(lastMouseDownPosition));
+            MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
+            UtilsClass.CreateWorldTextPopup("-" + currentCrop.buyPrice + "$", mainCam.ScreenToWorldPoint(lastMouseDownPosition));
 
             tile.SetCrop(currentCrop);
             cropsTilemap.RefreshTile(tile.GetPosition());
@@ -343,10 +362,10 @@ namespace FarmGame
 
             int sellWorth = tile.GetSellWorth();
             playerMoney += sellWorth;
-            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
-            UtilsClass.CreateWorldTextPopup("+"+sellWorth+"$",mainCam.ScreenToWorldPoint(lastMouseDownPosition));
+            MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
+            UtilsClass.CreateWorldTextPopup("+" + sellWorth + "$", mainCam.ScreenToWorldPoint(lastMouseDownPosition));
             MessageKit.post(Messages.PositiveEvent);
-            
+
             cropsTilemap.SetTile(tile.GetPosition(), null);
             crops.Remove(tile);
             GameObject.Destroy(tile);
@@ -359,57 +378,53 @@ namespace FarmGame
             GameObject.Destroy(tile);
         }
 
-        public void PauseGame()
+        public List<CropTile> GetCrops()
         {
-            Time.timeScale = 0f;
-            pause = true;
-        }
-
-        public void ResumeGame()
-        {
-            Time.timeScale = 1f;
-            pause = false;
-        }
-
-    
-        public List<CropTile> GetCrops(){
             return crops;
         }
 
-        public void SetCrops(List<CropTile> c){
+        public void SetCrops(List<CropTile> c)
+        {
             crops.Clear();
             crops = c;
-            for(int i=0;i<crops.Count;i++){
-                cropsTilemap.SetTile(crops[i].GetPosition(),crops[i]);
+            for (int i = 0; i < crops.Count; i++)
+            {
+                cropsTilemap.SetTile(crops[i].GetPosition(), crops[i]);
                 cropsTilemap.RefreshTile(crops[i].GetPosition());
             }
         }
 
-        void SetCurrentCrop(Crop c){
+        void SetCurrentCrop(Crop c)
+        {
             currentCrop = c;
             MessageKit<Action>.post(Messages.SwitchAction, Action.Plant);
         }
 
-        public List<FarmField> GetFields(){
+        public List<FarmField> GetFields()
+        {
             return fields;
         }
 
-        public int GetMoney(){
+        public int GetMoney()
+        {
             return playerMoney;
         }
 
-        public double GetGameTime(){
+        public double GetGameTime()
+        {
             return gameTime;
         }
-        
-        public void SetMoney(int money){
+
+        public void SetMoney(int money)
+        {
             playerMoney = money;
-            MessageKit<int>.post(Messages.MoneyUpdate,playerMoney);
+            MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
         }
 
-        public void SetGameTime(double time){
+        public void SetGameTime(double time)
+        {
             gameTime = time;
-            MessageKit<double>.post(Messages.GameTick,gameTime);
+            MessageKit<double>.post(Messages.GameTick, gameTime);
             if (gameTime == GlobalVariables.nightStart)
             {
                 MessageKit<bool>.post(Messages.NightSwitch, true);
@@ -420,6 +435,40 @@ namespace FarmGame
             }
         }
 
+        public void AskReset()
+        {
+            if(askedReset){
+                askedReset = false;
+                Reset();
+                UtilsClass.CreateWorldTextPopup("Data reset", mainCam.transform.position);
+                return;
+            }
+
+            UtilsClass.CreateWorldTextPopup("Press again if you want to reset your data", mainCam.transform.position);
+            askedReset = true;
+            Sequence seq = DOTween.Sequence();
+            seq.AppendInterval(0.2f);
+            seq.AppendCallback(() => askedReset = false);
+        }
+
+        public void Reset()
+        {
+            for (int i = 0; i < fields.Count; i++)
+            {
+                fields[i].SetBought(false);
+            }
+
+            cropSpaceTilemap.ClearAllTiles();
+            cropsTilemap.ClearAllTiles();
+            crops.Clear();
+            gameTime = gameTime % 24;
+            playerMoney = 50;
+
+            MessageKit<int>.post(Messages.MoneyUpdate, playerMoney);
+            MessageKit.post(Messages.NewData);
+            MessageKit<double>.post(Messages.GameTick, gameTime);
+
+        }
     }
 
 }

@@ -1,1 +1,1 @@
-{"money":20,"gameTime":289.0,"boughtFields":[1,0,1,1],"crops":[{"cropID":-1,"position":{"x":-14,"y":-7,"z":0},"cropTime":58,"cropStep":0},{"cropID":-1,"position":{"x":-13,"y":-2,"z":0},"cropTime":38,"cropStep":0},{"cropID":-1,"position":{"x":-13,"y":-5,"z":0},"cropTime":38,"cropStep":0}]}
+{"money":50,"gameTime":22.0,"boughtFields":[0,0,0,0],"crops":[]}

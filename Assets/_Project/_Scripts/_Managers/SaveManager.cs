@@ -12,10 +12,29 @@ namespace FarmGame
     public class SaveManager : MonoBehaviour
     {
         string filename = "savefile";
+        string saveFilePath = "";
 
         GameManager gameManager;
+
+        bool onMobile = false;
         private void Awake()
         {
+            //Platform dependant compilation is better for performances
+            #if UNITY_EDITOR
+                onMobile = false;
+            #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP_8_1
+                onMobile = true;
+            #endif
+
+            if (onMobile)
+            {
+                saveFilePath = Application.persistentDataPath + "/" + filename + ".txt";
+            }
+            else
+            {
+                saveFilePath = Application.dataPath + "/" + filename + ".txt";
+            }
+
             gameManager = GetComponent<GameManager>();
             Load();
 
@@ -65,14 +84,16 @@ namespace FarmGame
 
             string jsonData = JsonUtility.ToJson(gd);
 
-            File.WriteAllText(Application.dataPath + "/" + filename + ".txt", jsonData);
+
+            File.WriteAllText(saveFilePath, jsonData);
         }
 
         void Load()
         {
-            if (File.Exists(Application.dataPath + "/" + filename + ".txt"))
+            if (File.Exists(saveFilePath))
             {
-                string saveString = File.ReadAllText(Application.dataPath + "/" + filename + ".txt");
+
+                string saveString = File.ReadAllText(saveFilePath);
 
                 GameData savedData = JsonUtility.FromJson<GameData>(saveString);
 
@@ -104,11 +125,13 @@ namespace FarmGame
                 }
 
                 gameManager.SetCrops(cropTiles);
-            } else {
+            }
+            else
+            {
                 Debug.Log("Nothing to load");
             }
         }
-        
+
     }
 
 
