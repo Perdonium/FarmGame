@@ -1,6 +1,6 @@
 # FarmGame
 
-[game-screenshot]: images/screenshot.png
+![Screenshot](images/screenshot.png)
 
 ## Gameplay
 
@@ -56,3 +56,5 @@ For this project, I used 2 external libraries :
 
 * [All the sprites are from this wonderful free pack](https://sondanielson.itch.io/simple-farm-pack)
 * [I got the music here](https://opengameart.org/content/casual-game-track)
+
+
