@@ -22,6 +22,8 @@ In FarmGame, you plant crops, and try to make a profit to buy more fields, and m
 * Once that was settled, the interesting mechanic is watching your fields grow. For that, I had 2 options : use a global coroutine that'll update each crop every game tick, or have a coroutine for each crop that'll only yield at the time the crop reaches next stage.
 I went for the first approach : I'ld rather have a Coroutine that updates 10000 double every game tick than 10000 coroutines. In this game, one game tick represents an hour.
 
+* The crops are plain ScriptableObjects containing informations like their stages, name, etc and are linked by reference to the CropTiles.
+
 * For the fields, here is how it work :
 1. Each field is represented by a cost and a tilemap. This tilemap represents all the space that will be available to the player once bought.
 2. My GameManager script contains a cropsAvailableTilemap, which is checked whenever the player want to start interacting with a tile. If the cropsAvailableTilemap contains a tile at the same place, then the player can interact with this position.
