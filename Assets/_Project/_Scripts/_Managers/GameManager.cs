@@ -232,8 +232,7 @@ namespace FarmGame
 
             //Update all the crops's times
             //It's either that or a coroutine on each crop
-            int cropsCount = crops.Count;
-            for (int i = 0; i < cropsCount; i++)
+            for (int i = 0; i < crops.Count; i++)
             {
 
                 if (crops[i].UpdateTime())

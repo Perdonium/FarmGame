@@ -25867,7 +25867,7 @@ MonoBehaviour:
   - {fileID: 1672491258}
   - {fileID: 2146129812}
   cropsTilemap: {fileID: 1018386479}
-  cropSpaceTilemap: {fileID: 1368448742}
+  cropsAvailableTilemap: {fileID: 1368448742}
   playerMoney: 100
 --- !u!4 &1260010474
 Transform:
