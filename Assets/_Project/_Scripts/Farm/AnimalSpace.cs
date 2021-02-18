@@ -26,6 +26,8 @@ namespace FarmGame
         bool moveToBase = false;
         const float animalSpeed = 1f;
 
+        Sequence sequence;
+
         #endregion
 
         // Start is called before the first frame update
@@ -54,6 +56,9 @@ namespace FarmGame
 
         void MoveToNextPosition()
         {
+            sequence.Kill();
+            DOTween.Kill(animal);
+            
             Vector3 nextPosition = GetRandomPositionWithinSpace();
             if (goToSleep)
             {
@@ -71,11 +76,11 @@ namespace FarmGame
                 animal.localScale = new Vector3(1, 1, 1);
             }
 
-            Sequence seq = DOTween.Sequence();
-            seq.AppendInterval(Random.Range(0.5f,1f));
-            seq.AppendCallback(() => animalAnimator.SetBool("moving",true));
+            sequence = DOTween.Sequence();
+            sequence.AppendInterval(Random.Range(0.5f,1f));
+            sequence.AppendCallback(() => animalAnimator.SetBool("moving",true));
 
-            seq.Append(animal.DOMove(nextPosition, animalSpeed*Vector3.Distance(nextPosition, animal.position)).SetEase(Ease.Linear).OnComplete(() =>  {
+            sequence.Append(animal.DOMove(nextPosition, animalSpeed*Vector3.Distance(nextPosition, animal.position)).SetEase(Ease.Linear).OnComplete(() =>  {
                 animalAnimator.SetBool("moving",false);
                 if(moveToBase){
                     goToSleep = false;
