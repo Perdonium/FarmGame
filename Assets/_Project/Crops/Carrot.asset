@@ -10,16 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e5b3fab22adb4f799fa6c858a5cf996, type: 3}
-  m_Name: PlantB
+  m_Name: Carrot
   m_EditorClassIdentifier: 
   cropID: 1
   name: PlantB
-  growTime: 02000000040000000600000008000000
+  growTime: 18000000300000006000000090000000
   sprites:
   - {fileID: -7830631838645849028, guid: b57f00387c38547d0849e7b99b82d9e8, type: 3}
   - {fileID: 1975711324659690500, guid: b57f00387c38547d0849e7b99b82d9e8, type: 3}
   - {fileID: -1364030431294790696, guid: b57f00387c38547d0849e7b99b82d9e8, type: 3}
   - {fileID: 6084420949263865767, guid: b57f00387c38547d0849e7b99b82d9e8, type: 3}
-  currentTime: 0
-  purchasePrice: 0
-  sellPrice: 15
+  buyPrice: 10
+  sellPrice: 20

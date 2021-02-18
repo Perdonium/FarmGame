@@ -6,6 +6,7 @@ using Cinemachine;
 using UnityEngine.UI;
 using Prime31.MessageKit;
 using UnityEngine.Tilemaps;
+using TMPro;
 
 namespace FarmGame
 {
@@ -26,6 +27,7 @@ namespace FarmGame
         void Start()
         {
             fieldButton.onClick.AddListener(() => OnButtonClick());
+            fieldButton.transform.GetComponentInChildren<TextMeshProUGUI>(true).text = cost+"$";
         }
 
         void OnButtonClick()

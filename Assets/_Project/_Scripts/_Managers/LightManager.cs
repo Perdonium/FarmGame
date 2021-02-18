@@ -31,7 +31,6 @@ namespace FarmGame
         }
 
         void OnNightSwitch(bool night){
-            Debug.Log(night);
             inTransition = true;
             toNight = night;
             lightTransitionValue = 0;

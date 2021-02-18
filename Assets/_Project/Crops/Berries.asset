@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e5b3fab22adb4f799fa6c858a5cf996, type: 3}
-  m_Name: PlantA
+  m_Name: Berries
   m_EditorClassIdentifier: 
-  name: PlantA
-  growTime: 02000000040000000600000008000000
+  cropID: 0
+  name: Berries
+  growTime: 18000000300000004800000078000000
   sprites:
   - {fileID: -4394745163476757263, guid: 861ed967baf3241e1a6d66020fc3b662, type: 3}
   - {fileID: -8633616707004202064, guid: 861ed967baf3241e1a6d66020fc3b662, type: 3}
   - {fileID: -6868808690094048804, guid: 861ed967baf3241e1a6d66020fc3b662, type: 3}
   - {fileID: -2555577753942633303, guid: 861ed967baf3241e1a6d66020fc3b662, type: 3}
-  currentTime: 0
-  purchasePrice: 0
+  buyPrice: 5
   sellPrice: 10

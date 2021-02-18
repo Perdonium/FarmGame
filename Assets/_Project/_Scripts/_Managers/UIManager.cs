@@ -133,7 +133,8 @@ namespace FarmGame
         void SetClock(double time)
         {
             double currentHour = (((time % 24) + 8) % 24);
-            clock.text = currentHour.ToString() + "h";
+            int day = ((int)time/24)+1;
+            clock.text = "Day "+ day+" - "+currentHour.ToString() + "h";
         }
 
         void SetMoney(int m)

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System;
+using Prime31.MessageKit;
 
 namespace FarmGame
 {
@@ -16,6 +17,10 @@ namespace FarmGame
         private void Awake()
         {
             gameManager = GetComponent<GameManager>();
+            Load();
+
+            MessageKit<double>.addObserver(Messages.GameTick, (d) => Save());
+            MessageKit.addObserver(Messages.NewData, () => Save());
         }
 
 
@@ -61,8 +66,6 @@ namespace FarmGame
             string jsonData = JsonUtility.ToJson(gd);
 
             File.WriteAllText(Application.dataPath + "/" + filename + ".txt", jsonData);
-
-            Debug.Log("Saved");
         }
 
         void Load()
@@ -77,7 +80,7 @@ namespace FarmGame
                 gameManager.SetGameTime(savedData.gameTime);
 
                 List<FarmField> fields = gameManager.GetFields();
-                for (int i = 0; i < fields.Count; i++)
+                for (int i = 0; i < savedData.boughtFields.Count; i++)
                 {
                     if (savedData.boughtFields[i] == 1)
                     {
@@ -105,17 +108,7 @@ namespace FarmGame
                 Debug.Log("Nothing to load");
             }
         }
-        private void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.S))
-            {
-                Save();
-            }
-            if (Input.GetKeyDown(KeyCode.L))
-            {
-                Load();
-            }
-        }
+        
     }
 
 

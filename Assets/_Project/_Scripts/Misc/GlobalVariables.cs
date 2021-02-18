@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 namespace FarmGame
 {
@@ -12,6 +13,10 @@ namespace FarmGame
         [SerializeField]
         List<Crop> availableCrops;
 
+        [SerializeField]
+        TMP_FontAsset font;
+
+        public static TMP_FontAsset gameFont;
         public static Dictionary<int, Crop> cropsDictionary;
         
         public static int nightStart = 20;
@@ -24,6 +29,8 @@ namespace FarmGame
             for(int i=0;i<availableCrops.Count;i++){
                 cropsDictionary.Add(availableCrops[i].cropID, availableCrops[i]);
             }
+
+            gameFont = font;
         }
     }
 
@@ -38,6 +45,9 @@ namespace FarmGame
         public const int SwitchView = 6;
         public const int CropSet = 7;
         public const int NightSwitch = 8;
+        public const int NewData = 9;
+        public const int PositiveEvent = 10;
+        public const int CropPlanted = 11;
     }
 
     public enum Action { Harvest, Prepare, Plant, Delete };
